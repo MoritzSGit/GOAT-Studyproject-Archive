@@ -9,16 +9,24 @@
       stateless
       value="true"
       right
+      :permanent="container === true"
       width="350"
       hide-overlay
-      class="white"
+      class="white left-shadow"
     >
-      <v-layout justify-space-between column fill-height>
-        <keep-alive>
-          <component v-bind:is="activeUpComponent"></component>
-        </keep-alive>
-        <v-icon @click="hide" class="close-icon">close</v-icon>
-      </v-layout>
+      <vue-scroll>
+        <v-layout
+          justify-space-between
+          column
+          fill-height
+          style="overflow-y: auto;padding-right:5px;"
+        >
+          <keep-alive>
+            <component v-bind:is="activeUpComponent"></component>
+          </keep-alive>
+          <v-icon @click="hide" class="close-icon">close</v-icon>
+        </v-layout>
+      </vue-scroll>
     </v-navigation-drawer>
     <!-- App Bar -->
     <v-navigation-drawer
@@ -27,45 +35,56 @@
       app
       dark
       persistent
+      permanent
       right
       hide-overlay
       class="green"
+      :class="{ 'left-shadow': container === false }"
       width="50"
     >
       <v-layout justify-space-between column fill-height>
         <v-list>
           <template v-for="(item, index) in upItems">
-            <v-list-tile
+            <v-list-item
               @click="toggleComponent(item.componentToShow)"
               :key="index"
               active-class="red--text"
             >
-              <v-list-tile-action>
-                <v-icon color="white" light v-html="item.icon"></v-icon>
-              </v-list-tile-action>
-              <v-list-tile-content>
-                <v-list-tile-title v-html="item.text"></v-list-tile-title>
-              </v-list-tile-content>
-            </v-list-tile>
+              <v-list-item-action>
+                <v-icon
+                  :style="
+                    activeUpComponent === item.componentToShow
+                      ? 'color: #30c2ff;'
+                      : 'color: white'
+                  "
+                  light
+                  v-html="item.icon"
+                ></v-icon>
+              </v-list-item-action>
+              <v-list-item-content>
+                <v-list-item-title v-html="item.text"></v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
           </template>
         </v-list>
         <v-list justify-end>
           <template v-for="(item, index) in bottomItems">
-            <v-list-tile
+            <v-list-item
               @click="toggleDialog(item.componentToShow)"
               :key="index"
             >
-              <v-list-tile-action>
+              <v-list-item-action>
                 <v-icon color="white" light v-html="item.icon"></v-icon>
-              </v-list-tile-action>
-              <v-list-tile-content>
-                <v-list-tile-title v-html="item.text"></v-list-tile-title>
-              </v-list-tile-content>
-            </v-list-tile>
+              </v-list-item-action>
+              <v-list-item-content>
+                <v-list-item-title v-html="item.text"></v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
           </template>
         </v-list>
       </v-layout>
     </v-navigation-drawer>
+
     <component
       :visible="showDialog"
       @close="showDialog = false"
@@ -172,6 +191,10 @@ export default {
 </script>
 
 <style lang="scss">
+.activeIcon {
+  color: #30c2ff;
+}
+
 #app-toolbar {
   .v-list__tile {
     border-radius: 4px;
@@ -195,8 +218,12 @@ export default {
   padding-right: 50px;
   .close-icon {
     position: absolute;
-    right: 60px;
+    right: 10px;
     top: 10px;
   }
+}
+
+.left-shadow {
+  box-shadow: rgba(0, 0, 0, 0.3) 0px 0px 20px;
 }
 </style>

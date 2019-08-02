@@ -6,8 +6,8 @@
   >
     <app-sidebar />
     <tree-panel />
-    <v-content>
-      <v-container id="ol-map-container" fluid fill-height style="padding: 0">
+    <v-content class="pr-0">
+      <v-container id="ol-map-container" fluid fill-height class="pa-0">
         <app-map :color="controlsColor" />
         <map-loading-progress-status />
       </v-container>
@@ -22,6 +22,8 @@ import appMap from "./components/ol/Map";
 import appSidebar from "./components/core/SideDrawer";
 import treePanel from "./components/core/TreePanel";
 import MapLoadingProgressStatus from "./components/ol/MapLoadingProgressStatus";
+
+import { mapMutations } from "vuex";
 
 export default {
   name: "wg-app",
@@ -53,6 +55,15 @@ export default {
     // inform registered cmps that the app is mounted and the dynamic
     // components are available
     EventBus.$emit("app-mounted");
+
+    //Generate UserId
+    const userid = Math.floor(Math.random() * 10000000);
+    this.setUserId(userid);
+  },
+  methods: {
+    ...mapMutations("user", {
+      setUserId: "SET_USER_ID"
+    })
   }
 };
 </script>
