@@ -27,7 +27,7 @@ BEGIN
 		DROP TABLE IF EXISTS temp_extrapolated_reached_vertices;
 		
 	    CREATE temp TABLE temp_reached_vertices AS 
-		SELECT start_vertex, node, edge, cost, geom, objectid 
+		SELECT start_vertex, node, edge, cost, geom, objectid, cnt 
 		FROM temp_multi_reached_vertices
 		WHERE objectid = i;
 				
@@ -35,7 +35,7 @@ BEGIN
 	
 			CREATE temp TABLE temp_extrapolated_reached_vertices AS 
 			SELECT * 
-			FROM extrapolate_reached_vertices(minutes*60,(speed/3.6),excluded_class_id,categories_no_foot);
+			FROM extrapolate_reached_vertices((minutes*60)::NUMERIC, 200, (speed/3.6),excluded_class_id,categories_no_foot);
 			
 			ALTER TABLE temp_extrapolated_reached_vertices ADD COLUMN id serial;
 			ALTER TABLE temp_extrapolated_reached_vertices ADD PRIMARY key(id);
@@ -50,9 +50,9 @@ BEGIN
 			--FROM pgr_pointsaspolygon('select node id,st_x(geom) x,st_y(geom) y FROM temp_extrapolated_reached_vertices',0.000005); 
 			
 			EXECUTE format('
-			UPDATE '||grid||' set pois = closest_pois, area_isochrone = x.area
+			UPDATE '||grid||' set pois = x.closest_pois, area_isochrone = x.area, employees = closest_employees
 			FROM (
-				SELECT i.area, closest_pois(0.0009)
+				SELECT i.area, closest_pois(0.0009), closest_employees(0.0009)
 				FROM isochrone i
 			) x
 			WHERE grid_id = '||i
@@ -64,4 +64,24 @@ BEGIN
 END 
 $function$;
 
---SELECT * FROM precalculate_grid('grid_500',15,array[[11.4765751342908,48.0842050053819],[11.4785199868809,48.0819545493074]],5,array[1258,615])
+
+
+
+
+
+
+
+
+--WHERE grid_id = 65 OR grid_id = 1712
+--DROP TABLE IF EXISTS employees_inside_isochrone;
+
+--SELECT * FROM precalculate_grid('grid_500',15,array[[11.34238,48.00538],[11.34630,48.00539]],5,array[1712,65])
+
+
+	
+
+
+
+
+
+
