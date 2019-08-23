@@ -36,7 +36,7 @@ BEGIN
 	
 	key_value AS 
 	(
-		SELECT jsonb_build_object('company_name', company_name, 'cost', COST, 'employees', employees_adjusted, 'amenity', amenity) AS emps
+		SELECT jsonb_build_object('company_name', company_name, 'cost', COST, 'audience', employees_adjusted, 'amenity', amenity) AS emps
 		FROM distance_employees
 		
 	)
