@@ -1,14 +1,16 @@
 DROP TABLE IF EXISTS pois;
 CREATE TABLE pois as (
 
+
+-- all amenities, excluding shops, schools and kindergartens
 SELECT osm_id,'point' as orgin_geometry, access,"addr:housenumber" as housenumber, amenity, shop, 
 tags -> 'origin' AS origin, tags -> 'organic' AS organic, denomination,brand,name,
 operator,public_transport,railway,religion,tags -> 'opening_hours' as opening_hours, ref,tags, way as geom
 FROM planet_osm_point
-WHERE amenity IS NOT NULL AND shop IS NULL AND amenity <> 'school'
+WHERE amenity IS NOT NULL AND shop IS NULL AND amenity <> 'school' AND amenity <> 'kindergarten'
 
 UNION ALL 
-
+-- all shops that don't have an amenity'
 SELECT osm_id,'point' as orgin_geometry, access,"addr:housenumber" as housenumber, amenity, shop, 
 tags -> 'origin' AS origin, tags -> 'organic' AS organic, denomination,brand,name,
 operator,public_transport,railway,religion,tags -> 'opening_hours' as opening_hours, ref,tags, way as geom
@@ -16,15 +18,15 @@ FROM planet_osm_point
 WHERE shop IS NOT NULL AND amenity IS NULL
 
 UNION ALL 
-
+-- all amenities that are not schools
 SELECT osm_id, 'polygon' as orgin_geometry, access,"addr:housenumber" as housenumber, amenity, shop, 
 tags -> 'origin' AS origin, tags -> 'organic' AS organic, denomination,brand,name,
 operator,public_transport,railway,religion,tags -> 'opening_hours' as opening_hours, ref,tags, st_centroid(way) as geom
 FROM planet_osm_polygon
-WHERE amenity IS NOT NULL AND amenity <> 'school' 
+WHERE amenity IS NOT NULL AND amenity <> 'school' AND amenity <> 'kindergarten'
 
 UNION ALL 
-
+-- all shops
 SELECT osm_id,'polygon' as orgin_geometry, access,"addr:housenumber" as housenumber, amenity, 
 shop, tags -> 'origin' AS origin, tags -> 'organic' AS organic, denomination,brand,name,
 operator,public_transport,railway,religion,tags -> 'opening_hours' as opening_hours, ref,tags, st_centroid(way) as geom
@@ -33,7 +35,7 @@ WHERE shop IS NOT NULL
 
 
 UNION ALL
-
+-- all tourism
 SELECT osm_id,'point' as orgin_geometry, access,"addr:housenumber" as housenumber, tourism, shop, 
 tags -> 'origin' AS origin, tags -> 'organic' AS organic, denomination,brand,name,
 operator,public_transport,railway,religion,tags -> 'opening_hours' as opening_hours, ref,tags, way as geom
@@ -73,6 +75,58 @@ AND lower(name)~~ '%grundschule%';
 UPDATE pois set amenity = 'secondary_school'
 WHERE amenity = 'school' 
 AND lower(name)~~ ANY('{%hauptschule%,%realschule%,%mittelschule%,%gymnasium%}');
+
+
+
+-----------------------------------------------------------------
+-------------Insert kindergartens--------------------------------
+-----------------------------------------------------------------
+
+DROP TABLE IF EXISTS merged_kindergartens;
+CREATE TEMP TABLE merged_kindergartens AS
+(
+	WITH merged_geom AS
+	(	
+		SELECT (ST_Dump(way)).geom
+		FROM (
+			SELECT ST_Union(way) AS way		
+			FROM planet_osm_polygon
+			WHERE amenity = 'kindergarten') x
+	)	
+	-- Get attributes back by getting all polygons that are within the merged geometry.
+	-- Group by the merged geometry. Aggregate all other attributes...
+	SELECT max(osm_id) AS osm_id, 'polygon' as orgin_geometry, max(access) AS access, max("addr:housenumber") AS "addr:housenumber",
+	max(amenity) AS amenity, max(shop) AS shop, max(tags -> 'origin') AS origin, max(tags -> 'organic') AS organic, max(denomination) AS denomination,
+	max(brand) AS brand, max(name) AS name, max(operator) AS operator, max(public_transport) AS public_transport, max(railway) AS railway,
+	max(religion) AS religion, max(tags -> 'opening_hours') AS opening_hours, max(REF) AS ref, max(tags::TEXT)::hstore AS tags, m.geom
+	FROM planet_osm_polygon p, merged_geom m
+	WHERE amenity = 'kindergarten' AND st_contains(m.geom, p.way)
+	GROUP BY m.geom
+);
+
+
+INSERT INTO pois
+		
+SELECT DISTINCT p.osm_id,'point' as orgin_geometry, p.access, 'addr:housenumber', p.amenity, p.shop, --p."addr:housenumber" doesn't work
+p.tags -> 'origin' AS origin, p.tags -> 'organic' AS organic, p.denomination,p.brand,p.name,
+p.operator,p.public_transport,p.railway,p.religion,p.tags -> 'opening_hours' as opening_hours, p.ref, p.tags::hstore AS tags, p.way as geom
+FROM planet_osm_point p, merged_kindergartens
+WHERE p.amenity = 'kindergarten' AND NOT st_within(p.way, merged_kindergartens.geom)
+
+UNION ALL
+
+SELECT osm_id,'polygon' as orgin_geometry, access, "addr:housenumber", amenity, shop, 
+tags -> 'origin' AS origin, tags -> 'organic' AS organic, denomination,brand,name,
+operator,public_transport,railway,religion,tags -> 'opening_hours' as opening_hours, ref,tags, st_centroid(geom) AS geom
+FROM merged_kindergartens;
+
+------------------------------------------end kindergarten-------------------------------------------
+
+
+
+
+
+
 
 
 --For Munich grocery == convencience
