@@ -42,16 +42,34 @@ operator,public_transport,railway,religion,tags -> 'opening_hours' as opening_ho
 FROM planet_osm_point
 WHERE tourism IS NOT NULL
 
+UNION ALL
 
-UNION ALL 
+-- all sports (sport stuff is usually not tagged with amenity, but with leisure=* and sport=*)
+SELECT osm_id,'point' as orgin_geometry, access,"addr:housenumber" as housenumber, 'sport' AS amenity, shop, 
+tags -> 'origin' AS origin, tags -> 'organic' AS organic, denomination,brand,name,
+operator,public_transport,railway,religion,tags -> 'opening_hours' as opening_hours, ref, tags||hstore('sport', sport)||hstore('leisure', leisure)  AS tags, way as geom
+FROM planet_osm_point
+WHERE (sport IS NOT NULL
+OR leisure = any('{sports_hall, fitness_center, sport_center, track, pitch}'))
+AND leisure != 'fitness_station' AND sport != 'table_tennis'
 
+UNION ALL
+
+SELECT osm_id,'polygon' as orgin_geometry, access,"addr:housenumber" as housenumber, 'sport' AS amenity, shop, 
+tags -> 'origin' AS origin, tags -> 'organic' AS organic, denomination,brand,name,
+operator,public_transport,railway,religion,tags -> 'opening_hours' as opening_hours, ref, tags||hstore('sport', sport)||hstore('leisure', leisure)  AS tags, st_centroid(way) as geom
+FROM planet_osm_polygon
+WHERE (sport IS NOT NULL
+OR leisure = any('{sports_hall, fitness_center, sport_center, track, pitch}'))
+AND leisure != 'fitness_station' AND sport != 'table_tennis'
+
+UNION ALL
 
 -------------------------------------------------------------------
 --------------------School polygons--------------------------------
 -------------------------------------------------------------------
 
 --------------------------primary_school (über Name, wenn kein isced:level)------------------
-CREATE TABLE schools_from_polygons AS
 SELECT * FROM (
 SELECT osm_id, 'polygon' as orgin_geometry, access,"addr:housenumber" as housenumber, 'primary_school' AS amenity, shop, 
 tags -> 'origin' AS origin, tags -> 'organic' AS organic, denomination,brand,name,
@@ -121,7 +139,6 @@ UNION ALL
 -----------------------------------------------------------------
 
 --------------------------primary_school (über Name, wenn kein isced:level)------------------
-CREATE TABLE schools_from_points AS
 SELECT * FROM (
 SELECT osm_id, 'point' as orgin_geometry, access,"addr:housenumber" as housenumber, 'primary_school' AS amenity, shop, 
 tags -> 'origin' AS origin, tags -> 'organic' AS organic, denomination,brand,name,
@@ -184,8 +201,8 @@ AND tags -> 'isced:level' IS NULL)
 OR tags -> 'isced:level' LIKE '2'
 OR tags -> 'isced:level' LIKE '3'
 
-UNION ALL 
 
+);
 
 -----------------------------------------------------------------
 -------------Insert kindergartens--------------------------------
@@ -355,3 +372,5 @@ AND public_transport_stop = 'subway_entrance';
 
 ALTER TABLE public_transport_stops add primary key (gid); 
 CREATE INDEX index_public_transport_stops ON public_transport_stops USING GIST (geom);
+
+--SELECT * FROM pois ORDER BY amenity
