@@ -45,37 +45,146 @@ WHERE tourism IS NOT NULL
 
 UNION ALL 
 
+
+-------------------------------------------------------------------
+--------------------School polygons--------------------------------
+-------------------------------------------------------------------
+
+--------------------------primary_school (über Name, wenn kein isced:level)------------------
+CREATE TABLE schools_from_polygons AS
 SELECT * FROM (
-SELECT osm_id, 'polygon' as orgin_geometry, access,"addr:housenumber" as housenumber, amenity, shop, 
+SELECT osm_id, 'polygon' as orgin_geometry, access,"addr:housenumber" as housenumber, 'primary_school' AS amenity, shop, 
 tags -> 'origin' AS origin, tags -> 'organic' AS organic, denomination,brand,name,
 operator,public_transport,railway,religion,tags -> 'opening_hours' as opening_hours, ref,tags, st_centroid(way) as geom
 FROM planet_osm_polygon
 WHERE amenity = 'school') x
-WHERE name LIKE '%Grundschule%'
-OR name like 'gymnasium' 
-OR name like '%Mittelschule%' 
-OR name like '%Realschule%'
-OR name like '%Haupt%'
+
+WHERE (lower(name) LIKE '%grund-%'
+OR name like '%Grund %'
+OR lower(name) like '%grundsch%'
+AND lower(name) NOT LIKE '%grund-schule%'
+AND tags -> 'isced:level' IS NULL)
+OR tags -> 'isced:level' LIKE '1'
+
+UNION ALL
+
+
+--------------secondary_school; Haupt-/Mittel-/Realschule/Gymnasium (über Name, wenn kein isced:level)----------------
+SELECT * FROM (
+SELECT osm_id, 'polygon' as orgin_geometry, access,"addr:housenumber" as housenumber, 'secondary_school' AS amenity, shop, 
+tags -> 'origin' AS origin, tags -> 'organic' AS organic, denomination,brand,name,
+operator,public_transport,railway,religion,tags -> 'opening_hours' as opening_hours, ref,tags, st_centroid(way) as geom
+FROM planet_osm_polygon
+WHERE amenity = 'school') x
+
+WHERE (lower(name) LIKE '%haupt-%'
+OR name like '%Haupt %'
+OR lower(name) like '%hauptsch%'
+AND lower(name) NOT LIKE '%haupt-schule%'
+
+OR lower(name) like '%mittel-%'
+OR name like '%Mittel %'
+OR lower(name) like '%mittelsch%'
+AND lower(name) NOT LIKE '%mittel-schule%'
+
+OR lower(name) like '%real-%'
+OR name like '%Real %'
+OR lower(name) like '%realsch%'
+AND lower(name) NOT LIKE '%real-schule%'
+
+OR lower(name) like '%förder-%'
+OR name like '%Förder %'
+OR lower(name) like '%fördersch%'
+AND lower(name) NOT LIKE '%förder-schule%'
+
+OR lower(name) like '%gesamt-%'
+OR name like '%Gesamt %'
+OR lower(name) like '%gesamtsch%'
+AND lower(name) NOT LIKE '%gesamt-schule%'
+
+OR lower(name) like '%-gymnasium%'
+OR lower(name) like '%gymnasium-%'
+OR name like '% Gymnasium%'
+OR name like '%Gymnasium %'
+
+OR name like '%Fachobersch%'
+
+AND tags -> 'isced:level' IS NULL)
+
+OR tags -> 'isced:level' LIKE '2'
+OR tags -> 'isced:level' LIKE '3'
 
 UNION ALL 
 
+-----------------------------------------------------------------
+--------------------School points--------------------------------
+-----------------------------------------------------------------
+
+--------------------------primary_school (über Name, wenn kein isced:level)------------------
+CREATE TABLE schools_from_points AS
 SELECT * FROM (
-SELECT osm_id,'point' as orgin_geometry, access,"addr:housenumber" as housenumber, amenity, shop, 
+SELECT osm_id, 'point' as orgin_geometry, access,"addr:housenumber" as housenumber, 'primary_school' AS amenity, shop, 
 tags -> 'origin' AS origin, tags -> 'organic' AS organic, denomination,brand,name,
-operator,public_transport,railway,religion,tags -> 'opening_hours' as opening_hours, ref,tags, way as geom
+operator,public_transport,railway,religion,tags -> 'opening_hours' as opening_hours, ref,tags, st_centroid(way) as geom
 FROM planet_osm_point
 WHERE amenity = 'school') x
-WHERE lower(name)~~ ANY('{%grundschule%,%hauptschule%,%realschule%,%mittelschule%,%gymnasium%}')   
-);
 
-UPDATE pois set amenity = 'primary_school'
-WHERE amenity = 'school' 
-AND lower(name)~~ '%grundschule%';
+WHERE (lower(name) LIKE '%grund-%'
+OR name like '%Grund %'
+OR lower(name) like '%grundsch%'
+AND lower(name) NOT LIKE '%grund-schule%'
+AND tags -> 'isced:level' IS NULL)
+OR tags -> 'isced:level' LIKE '1'
 
-UPDATE pois set amenity = 'secondary_school'
-WHERE amenity = 'school' 
-AND lower(name)~~ ANY('{%hauptschule%,%realschule%,%mittelschule%,%gymnasium%}');
+UNION ALL
 
+
+--------------secondary_school; Haupt-/Mittel-/Realschule/Gymnasium (über Name, wenn kein isced:level)----------------
+SELECT * FROM (
+SELECT osm_id, 'point' as orgin_geometry, access,"addr:housenumber" as housenumber, 'secondary_school' AS amenity, shop, 
+tags -> 'origin' AS origin, tags -> 'organic' AS organic, denomination,brand,name,
+operator,public_transport,railway,religion,tags -> 'opening_hours' as opening_hours, ref,tags, st_centroid(way) as geom
+FROM planet_osm_point
+WHERE amenity = 'school') x
+
+WHERE (lower(name) LIKE '%haupt-%'
+OR name like '%Haupt %'
+OR lower(name) like '%hauptsch%'
+AND lower(name) NOT LIKE '%haupt-schule%'
+
+OR lower(name) like '%mittel-%'
+OR name like '%Mittel %'
+OR lower(name) like '%mittelsch%'
+AND lower(name) NOT LIKE '%mittel-schule%'
+
+OR lower(name) like '%real-%'
+OR name like '%Real %'
+OR lower(name) like '%realsch%'
+AND lower(name) NOT LIKE '%real-schule%'
+
+OR lower(name) like '%förder-%'
+OR name like '%Förder %'
+OR lower(name) like '%fördersch%'
+AND lower(name) NOT LIKE '%förder-schule%'
+
+OR lower(name) like '%gesamt-%'
+OR name like '%Gesamt %'
+OR lower(name) like '%gesamtsch%'
+AND lower(name) NOT LIKE '%gesamt-schule%'
+
+OR lower(name) like '%-gymnasium%'
+OR lower(name) like '%gymnasium-%'
+OR name like '% Gymnasium%'
+OR name like '%Gymnasium %'
+
+OR name like '%Fachobersch%'
+
+AND tags -> 'isced:level' IS NULL)
+
+OR tags -> 'isced:level' LIKE '2'
+OR tags -> 'isced:level' LIKE '3'
+
+UNION ALL 
 
 
 -----------------------------------------------------------------
